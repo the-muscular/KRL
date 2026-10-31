@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cakung–Sudirman Trains</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one-column departure board — direction switch, next-train panel, upcoming list */
+:root{
+  --bg:#eef2f6; --surface:#ffffff; --fg:#14202b; --muted:#5b6b7a; --line:#d5dde5;
+  --bekasi:#0a6fc2; --bekasi-soft:#e2effa;
+  --loop:#c2410c; --loop-soft:#fbeadf;
+  --ok:#15803d;
+  --display:"Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body:"Public Sans", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d141b; --surface:#16202a; --fg:#e7edf3; --muted:#93a3b3; --line:#283543;
+  --bekasi:#5fb0f0; --bekasi-soft:#16304a; --loop:#f59a5c; --loop-soft:#3a2416; --ok:#4ade80; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d141b; --surface:#16202a; --fg:#e7edf3; --muted:#93a3b3; --line:#283543;
+  --bekasi:#5fb0f0; --bekasi-soft:#16304a; --loop:#f59a5c; --loop-soft:#3a2416; --ok:#4ade80; color-scheme:dark}
+html,body{background:var(--bg)}
+body{color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 32px}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.t{font-family:var(--display);font-variant-numeric:tabular-nums}
+header{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+h1{font-family:var(--display);font-size:22px;font-weight:700;margin:0;letter-spacing:.01em;text-wrap:balance}
+.clock{font-family:var(--display);font-size:20px;font-weight:600;color:var(--muted)}
+.dir{display:grid;grid-template-columns:1fr 1fr;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px}
+.dir button,.chips button{font:inherit;cursor:pointer;border:0;background:transparent;color:var(--muted)}
+.dir button{padding:10px 8px;border-radius:9px;font-family:var(--display);font-size:17px;font-weight:600;display:flex;flex-direction:column;align-items:center;line-height:1.15}
+.dir button small{font-family:var(--body);font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;opacity:.8}
+.dir button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chips button{padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:13px;font-weight:600}
+.chips button[aria-pressed="true"]{border-color:var(--fg);color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg)}
+button:focus-visible{outline:2px solid var(--bekasi);outline-offset:2px}
+.next{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px;border-top:5px solid var(--bekasi)}
+.next.loop{border-top-color:var(--loop)}
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--muted)}
+.bigrow{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.big{font-family:var(--display);font-size:64px;line-height:.9;font-weight:700;font-variant-numeric:tabular-nums}
+.count{font-family:var(--display);font-size:26px;font-weight:600;text-align:right}
+.count small{display:block;font-family:var(--body);font-size:12px;color:var(--muted);font-weight:500}
+.meta{display:flex;gap:8px 16px;flex-wrap:wrap;color:var(--muted);font-size:14px}
+.meta b{color:var(--fg);font-weight:600}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--bekasi-soft);color:var(--bekasi);white-space:nowrap}
+.badge.loop{background:var(--loop-soft);color:var(--loop)}
+.badge::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.tip{font-size:13px;padding:10px 12px;border-radius:10px;background:var(--bg);color:var(--fg)}
+.tip b{color:var(--ok)}
+.list{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.list h2{margin:0;padding:14px 16px 8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.row{display:grid;grid-template-columns:4px 64px 1fr auto;gap:0 12px;align-items:center;padding:11px 16px 11px 0;border-top:1px solid var(--line)}
+.row .bar{align-self:stretch;background:var(--bekasi);border-radius:0 3px 3px 0}
+.row.loop .bar{background:var(--loop)}
+.row .dep{font-family:var(--display);font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+.row .info{min-width:0;display:flex;flex-direction:column;gap:2px}
+.row .info .l1{font-size:14px;font-weight:600}
+.row .info .l2{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.row .in{font-family:var(--display);font-size:17px;font-weight:600;text-align:right;color:var(--muted);white-space:nowrap}
+.row.soon .in{color:var(--fg)}
+.row.past{opacity:.45}
+.more{display:block;width:100%;font:inherit;font-weight:600;font-size:14px;padding:13px;border:0;border-top:1px solid var(--line);background:transparent;color:var(--bekasi);cursor:pointer}
+.legend{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted)}
+.legend p{margin:0}
+footer{font-size:12px;color:var(--muted)}
+.empty{padding:18px 16px;color:var(--muted);border-top:1px solid var(--line)}
+@media (max-width:380px){.big{font-size:52px}.row{grid-template-columns:4px 56px 1fr auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Cakung ⇄ Sudirman</h1>
+    <div class="clock" id="clock">--:--</div>
+  </header>
+
+  <div class="dir" role="group" aria-label="Direction">
+    <button id="d-CUK_SUD" type="button" aria-pressed="false"><small>To work</small>CUK → SUD</button>
+    <button id="d-SUD_CUK" type="button" aria-pressed="false"><small>Going home</small>SUD → CUK</button>
+  </div>
+
+  <div class="chips" role="group" aria-label="Route">
+    <button id="f-all" type="button" aria-pressed="true">All trains</button>
+    <button id="f-direct" type="button" aria-pressed="false">Direct via Manggarai</button>
+    <button id="f-kpb" type="button" aria-pressed="false">Via Kampung Bandan</button>
+  </div>
+
+  <section class="next" id="next" aria-live="polite"></section>
+
+  <section class="list">
+    <h2 id="listTitle">Upcoming</h2>
+    <div id="rows"></div>
+    <button class="more" id="more" type="button">Show full day</button>
+  </section>
+
+  <div class="legend">
+    <p><span class="badge">Direct</span> Through Manggarai. About 25–35 min.</p>
+    <p><span class="badge loop">Via Kampung Bandan</span> The loop through Pasar Senen and Kampung Bandan. About 60–75 min. The train changes number at Kampung Bandan, but you stay on board.</p>
+  </div>
+
+  <footer>Times from the KRL Commuter Line timetable effective 1 February 2025 (Bekasi line). Times are Jakarta time (WIB). Check the KRL Access app for delays or timetable changes.</footer>
+</div>
+
+<script>
+const DATA={"CUK_SUD":[["04:36","05:00","5021",0,"Bks-Mri-Ak",""],["04:44","05:09","5023",0,"Bks-Mri-Ak",""],["04:50","05:14","5027",0,"Ckr-Mri-Ak",""],["04:58","05:23","5505",0,"Ckr-Mri-Kpb - Kpb-Pse-Bks",""],["05:05","05:30","5029",0,"Ckr-Mri-Ak",""],["05:12","06:16","6001/6002",1,"Bks-Pse-Kpb - Kpb-Mri-Ckr","05:49"],["05:21","05:45","5507",0,"Ckr-Mri-Kpb - Kpb-Pse-Bks",""],["05:31","05:56","5031",0,"Bks-Mri-Kpb",""],["05:36","06:41","6003/6004",1,"Bks-Pse-Kpb - Kpb-Mri-Ckr","06:14"],["05:42","06:09","5033",0,"Ckr-Mri-Ak",""],["05:50","06:16","5509",0,"Ckr-Mri-Kpb - Kpb-Pse-Ckr",""],["05:57","06:21","5037",0,"Bks-Mri-Kpb",""],["06:05","06:37","5511",0,"Ckr-Mri-Kpb - Kpb-Pse-Bks",""],["06:11","07:13","6005/6006",1,"Bks-Pse-Kpb - Kpb-Mri-Bks","06:47"],["06:18","06:43","5039",0,"Ckr-Mri-Ak",""],["06:23","06:49","5041",0,"Bks-Mri-Ak",""],["06:30","06:55","5043",0,"Ckr-Mri-Ak",""],["06:36","07:42","6007/6008",1,"Ckr-Pse-Kpb - Kpb-Mri-Bks","07:14"],["06:42","07:09","5045",0,"Bks-Mri-Ak",""],["06:49","07:14","5049",0,"Ckr-Mri-Ak",""],["06:55","07:19","5515",0,"Tb-Mri-Kpb - Kpb-Pse-Bks",""],["07:02","07:29","5051",0,"Bks-Mri-Ak",""],["07:08","08:11","6009/5712",1,"Ckr-Pse-Kpb - Kpb-Mri","07:43"],["07:13","07:38","5053",0,"Bks-Mri-Ak",""],["07:20","07:44","5517",0,"Ckr-Mri-Kpb - Kpb-Pse-Bks",""],["07:27","08:28","6011/5714",1,"Bks-Pse-Kpb - Kpb-Mri","08:02"],["07:37","08:01","5055",0,"Ckr-Mri-Ak",""],["07:42","08:09","5057",0,"Bks-Mri-Ak",""],["07:52","08:16","5519",0,"Ckr-Mri-Kpb - Kpb-Pse-Ckr",""],["07:57","08:28","5059",0,"Bks-Mri-Ak",""],["08:04","09:08","6013/6014",1,"Ckr-Pse-Kpb - Kpb-Mri-Bks","08:42"],["08:11","08:39","5521",0,"Bks-Mri-Kpb - Kpb-Pse-Ckr",""],["08:22","08:46","5063",0,"Ckr-Mri-Kpb",""],["08:27","09:28","6015/6016",1,"Bks-Pse-Kpb - Kpb-Mri-Bks","09:02"],["08:34","08:58","5065",0,"Ckr-Mri-Ak",""],["08:40","09:09","5067",0,"Bks-Mri-Ak",""],["08:52","09:16","5525",0,"Bks-Mri-Kpb - Kpb-Pse-Ckr",""],["08:57","09:23","5069",0,"Ckr-Mri-Kpb",""],["09:08","10:11","6017/6018",1,"Bks-Pse-Kpb - Kpb-Mri-Tb","09:43"],["09:15","09:42","5527",0,"Ckr-Mri-Kpb - Kpb-Pse-Bks",""],["09:22","09:47","5071",0,"Bks-Mri-Ak",""],["09:30","09:54","5073",0,"Ckr-Mri-Kpb",""],["09:35","09:59","5075",0,"Ckr-Mri-Ak",""],["09:40","10:42","6019/6020",1,"Bks-Pse-Kpb - Kpb-Mri-Ckr","10:15"],["09:45","10:09","5077",0,"Ckr-Mri-Ak",""],["09:51","10:14","5529",0,"Bks-Mri-Kpb - Kpb-Pse-Bks",""],["10:01","10:28","5079",0,"Ckr-Mri-Ak",""],["10:06","11:07","6021/6022",1,"Bks-Pse-Kpb - Kpb-Mri-Bks","10:40"],["10:15","10:39","5531",0,"Ckr-Mri-Kpb - Kpb-Pse-Ckr",""],["10:21","10:46","5081",0,"Bks-Mri-Ak",""],["10:30","10:56","5533",0,"Bks-Mri-Kpb - Kpb-Pse-Bks",""],["10:35","11:43","6023/6024",1,"Ckr-Pse-Kpb - Kpb-Mri-Ckr","11:14"],["10:45","11:09","5085",0,"Ckr-Mri-Ak",""],["10:54","11:20","5087",0,"Bks-Mri-Ak",""],["11:02","12:07","6025/6026",1,"Ckr-Pse-Kpb - Kpb-Mri-Bks","11:39"],["11:07","11:31","5089",0,"Bks-Mri-Kpb",""],["11:12","11:39","5091",0,"Ckr-Mri-Ak",""],["11:19","11:44","5093",0,"Bks-Mri-Ak",""],["11:25","11:50","5537",0,"Tb-Mri-Kpb - Kpb-Pse-Ckr",""],["11:30","12:37","6027/6028",1,"Bks-Pse-Kpb - Kpb-Mri-Ckr","12:10"],["11:35","12:00","5095",0,"Ckr-Mri-Ak",""],["11:45","12:14","5097",0,"Bks-Mri-Ak",""],["11:54","12:19","5539",0,"Ckr-Mri-Kpb - Kpb-Pse-Bks",""],["11:59","13:07","6029/6030",1,"Bks-Pse-Kpb - Kpb-Mri","12:36"],["12:05","12:29","5099",0,"Bks-Mri-Ak",""],["12:11","12:39","5101",0,"Ckr-Mri-Ak",""],["12:20","12:44","5541",0,"Ckr-Mri-Kpb - Kpb-Pse-Bks",""],["12:28","12:55","5103",0,"Bks-Mri-Ak",""],["12:34","13:37","6031/6032",1,"Ckr-Pse-Kpb - Kpb-Mri-Bks","13:10"],["12:42","13:46","6033/6034",1,"Bks-Pse-Kpb - Kpb-Mri-Bks","13:18"],["12:51","13:15","5543",0,"Ckr-Mri-Kpb - Kpb-Pse-Bks",""],["12:57","13:20","5107",0,"Bks-Mri-Ak",""],["13:02","14:07","6035/6036",1,"Bks-Pse-Kpb - Kpb-Mri-Ckr","13:38"],["13:12","13:40","5109",0,"Ckr-Mri-Kpb",""],["13:17","14:20","6037/6038",1,"Bks-Pse-Kpb - Kpb-Mri-Ckr","13:53"],["13:24","13:49","5111",0,"Ckr-Mri-Ak",""],["13:31","13:54","5545",0,"Bks-Mri-Kpb - Kpb-Pse-Ckr",""],["13:45","14:14","5115",0,"Ckr-Mri-Ak",""],["13:50","14:52","6039/6040",1,"Bks-Pse-Kpb - Kpb-Mri-Bks","14:25"],["13:56","14:20","5547",0,"Ckr-Mri-Kpb - Kpb-Pse-Bks",""],["14:02","14:26","5117",0,"Bks-Mri-Ak",""],["14:07","14:31","5119",0,"Ckr-Mri-Ak",""],["14:13","15:16","6041/6042",1,"Bks-Pse-Kpb - Kpb-Mri-Bks","14:49"],["14:19","14:43","5121",0,"Bks-Mri-Ak",""],["14:25","14:49","5549",0,"Ckr-Mri-Kpb - Kpb-Pse-Bks",""],["14:32","15:01","5123",0,"Bks-Mri-Ak",""],["14:37","15:43","6043/6044",1,"Ckr-Pse-Kpb - Kpb-Mri-Bks","15:14"],["14:42","15:09","5551",0,"Bks-Mri-Kpb - Kpb-Pse-Ckr",""],["14:47","15:53","6045/5730",1,"Ckr-Pse-Kpb - Kpb-Mri","15:23"],["14:52","15:15","5125",0,"Bks-Mri-Ak",""],["15:06","16:08","6047/6048",1,"Bks-Pse-Kpb - Kpb-Mri-Ckr","15:41"],["15:15","15:39","5553",0,"Ckr-Mri-Kpb - Kpb-Pse-Bks",""],["15:25","15:48","5129",0,"Bks-Mri-Kpb",""],["15:29","15:53","5131",0,"Bks-Mri-Ak",""],["15:40","16:43","6049/6050",1,"Ckr-Pse-Kpb - Kpb-Mri-Bks","16:16"],["15:46","16:10","5555",0,"Bks-Mri-Kpb - Kpb-Pse-Bks",""],["15:55","16:20","5133",0,"Ckr-Mri-Ak",""],["16:01","16:25","5137",0,"Bks-Mri-Kpb",""],["16:06","17:12","6051/6052",1,"Bks-Pse-Kpb - Kpb-Mri-Bks","16:43"],["16:13","16:39","5139",0,"Ckr-Mri-Ak",""],["16:18","16:44","5557",0,"Bks-Mri-Kpb - Kpb-Pse-Bks",""],["16:25","16:54","5141",0,"Ckr-Mri-Ak",""],["16:31","17:37","6053/6054",1,"Ckr-Pse-Kpb - Kpb-Mri-Ckr","17:09"],["16:37","17:00","5143",0,"Bks-Mri-Kpb",""],["16:43","17:09","5145",0,"Ckr-Mri-Ak",""],["16:48","17:52","6055/6056",1,"Bks-Pse-Kpb - Kpb-Mri-Ckr","17:25"],["16:57","17:27","5147",0,"Ckr-Mri-Kpb",""],["17:07","18:15","6057/6058",1,"Ckr-Pse-Kpb - Kpb-Mri-Bks","17:46"],["17:14","17:39","5149",0,"Bks-Mri-Ak",""],["17:22","17:46","5151",0,"Ckr-Mri-Ak",""],["17:27","17:51","5561",0,"Bks-Mri-Kpb - Kpb-Pse-Ckr",""],["17:35","18:43","6059/6060",1,"Ckr-Pse-Kpb - Kpb-Mri-Ckr","18:14"],["17:42","18:09","5153",0,"Bks-Mri-Kpb",""],["17:50","18:15","5155",0,"Bks-Mri-Ak",""],["17:55","18:58","6061/6062",1,"Ckr-Pse-Kpb - Kpb-Mri-Bks","18:31"],["18:00","18:23","5563",0,"Bks-Mri-Kpb - Kpb-Pse-Ckr",""],["18:05","18:29","5157",0,"Bks-Mri-Ak",""],["18:11","18:40","5159",0,"Ckr-Mri-Kpb",""],["18:20","18:47","5161",0,"Bks-Mri-Ak",""],["18:26","19:28","6063/5738",1,"Bks-Pse-Kpb - Kpb-Mri","19:01"],["18:31","18:54","5565",0,"Ckr-Mri-Kpb - Kpb-Pse-Bks",""],["18:41","19:11","5165",0,"Bks-Mri-Ak",""],["18:50","19:18","5567",0,"Ckr-Mri-Kpb - Kpb-Pse-Ckr",""],["18:55","20:07","6065/6066",1,"Bks-Pse-Kpb - Kpb-Mri-Ckr","19:37"],["19:04","19:31","5167",0,"Ckr-Mri-Ak",""],["19:11","19:39","5569",0,"Bks-Mri-Kpb - Kpb-Pse-Bks",""],["19:16","19:44","5169",0,"Tb-Mri-Ak",""],["19:21","20:28","6067/5742",1,"Bks-Pse-Kpb - Kpb-Mri","19:59"],["19:26","19:49","5171",0,"Ckr-Mri-Ak",""],["19:34","19:59","5173",0,"Ckr-Mri-Ak",""],["19:41","20:09","5573",0,"Bks-Mri-Kpb - Kpb-Pse-Bks",""],["19:46","20:51","6069/6070",1,"Bks-Pse-Kpb - Kpb-Mri-Bks","20:22"],["19:53","20:21","5575",0,"Ckr-Mri-Kpb - Kpb-Pse-Ckr",""],["20:02","20:27","5175",0,"Bks-Mri-Ak",""],["20:14","21:19","6071/5746",1,"Bks-Pse-Kpb - Kpb-Mri","20:50"],["20:21","20:44","5577",0,"Ckr-Mri-Kpb - Kpb-Pse-Ckr",""],["20:26","21:28","6073/6074",1,"Bks-Pse-Kpb - Kpb-Mri-Bks","21:01"],["20:34","20:59","5179",0,"Ckr-Mri-Kpb",""],["20:49","21:13","5181",0,"Ckr-Mri-Ak",""],["20:56","21:21","5579",0,"Bks-Mri-Kpb - Kpb-Pse-Bks",""],["21:17","22:20","6077/6078",1,"Bks-Pse-Kpb - Kpb-Mri-Ckr","21:53"],["21:23","21:47","5581",0,"Ckr-Mri-Kpb - Kpb-Pse-Bks",""],["21:28","21:52","5185",0,"Bks-Mri-Ak",""],["21:38","22:08","5187",0,"Ckr-Mri-Ak",""],["21:44","22:14","5583",0,"Bks-Mri-Kpb - Kpb-Pse-Bks",""],["21:49","22:57","6079/6080",1,"Bks-Pse-Kpb - Kpb-Mri-Ckr","22:28"],["21:58","22:25","5189",0,"Bks-Mri-Ak",""],["22:08","22:33","5191",0,"Ckr-Mri-Kpb",""],["22:14","22:39","5193",0,"Ckr-Mri-Ak",""],["22:21","23:22","6081/6082",1,"Bks-Pse-Kpb - Kpb-Mri-Ckr","22:56"],["22:58","23:24","5197",0,"Ckr-Mri-Ak",""],["23:05","23:32","5199",0,"Bks-Mri-Ak",""]],"SUD_CUK":[["05:15","05:42","5016",0,"Ak-Mri-Bks",""],["05:22","05:49","5018",0,"Kpb-Mri-Ckr",""],["05:23","06:32","5505/5506",1,"Ckr-Mri-Kpb - Kpb-Pse-Bks","05:53"],["05:43","06:13","5022",0,"Ak-Mri-Tb",""],["05:45","06:50","5507/5508",1,"Ckr-Mri-Kpb - Kpb-Pse-Bks","06:12"],["05:52","06:18","5024",0,"Ak-Mri-Bks",""],["06:16","07:27","5509/5510",1,"Ckr-Mri-Kpb - Kpb-Pse-Ckr","06:42"],["06:16","06:42","6002",0,"Kpb-Mri-Ckr",""],["06:28","06:57","5028",0,"Ak-Mri-Bks",""],["06:37","07:50","5511/5512",1,"Ckr-Mri-Kpb - Kpb-Pse-Bks","07:07"],["06:41","07:08","6004",0,"Kpb-Mri-Ckr",""],["06:47","07:14","5030",0,"Ak-Mri-Bks",""],["06:52","07:19","5034",0,"Ak-Mri-Ckr",""],["07:00","08:09","5513/5514",1,"Mri-Kpb - Kpb-Pse-Ckr","07:28"],["07:07","07:33","5036",0,"Ak-Mri-Bks",""],["07:13","07:39","6006",0,"Kpb-Mri-Bks",""],["07:19","08:28","5515/5516",1,"Tb-Mri-Kpb - Kpb-Pse-Bks","07:48"],["07:22","07:55","5038",0,"Kpb-Mri-Ckr",""],["07:37","08:03","5044",0,"Ak-Mri-Ckr",""],["07:42","08:15","6008",0,"Kpb-Mri-Bks",""],["07:44","08:52","5517/5518",1,"Ckr-Mri-Kpb - Kpb-Pse-Bks","08:12"],["07:52","08:21","5046",0,"Ak-Mri-Bks",""],["08:06","08:36","5048",0,"Ak-Mri-Ckr",""],["08:16","09:23","5519/5520",1,"Ckr-Mri-Kpb - Kpb-Pse-Ckr","08:46"],["08:16","08:43","5050",0,"Ak-Mri-Ckr",""],["08:20","08:57","5052",0,"Ak-Mri-Ckr",""],["08:38","09:05","5054",0,"Ak-Mri-Bks",""],["08:39","09:42","5521/5522",1,"Bks-Mri-Kpb - Kpb-Pse-Ckr","09:06"],["08:44","09:10","5056",0,"Ak-Mri-Bks",""],["08:52","10:01","5523/5524",1,"Mri-Kpb - Kpb-Pse-Ckr","09:21"],["09:08","09:35","6014",0,"Kpb-Mri-Bks",""],["09:16","10:21","5525/5526",1,"Bks-Mri-Kpb - Kpb-Pse-Ckr","09:44"],["09:23","09:50","5060",0,"Ak-Mri-Bks",""],["09:28","09:56","6016",0,"Kpb-Mri-Ckr",""],["09:37","10:07","5062",0,"Ak-Mri-Bks",""],["09:42","10:49","5527/5528",1,"Ckr-Mri-Kpb - Kpb-Pse-Bks","10:09"],["09:44","10:13","5064",0,"Ak-Mri-Ckr",""],["09:58","10:27","5066",0,"Kpb-Mri-Bks",""],["10:11","10:37","6018",0,"Kpb-Mri-Tb",""],["10:14","11:21","5529/5530",1,"Bks-Mri-Kpb - Kpb-Pse-Bks","10:43"],["10:17","10:42","5068",0,"Ak-Mri-Bks",""],["10:28","10:55","5070",0,"Ak-Mri-Ckr",""],["10:37","11:03","5072",0,"Kpb-Mri-Bks",""],["10:39","11:44","5531/5532",1,"Ckr-Mri-Kpb - Kpb-Pse-Ckr","11:08"],["10:42","11:10","6020",0,"Kpb-Mri-Ckr",""],["10:56","12:01","5533/5534",1,"Bks-Mri-Kpb - Kpb-Pse-Bks","11:24"],["10:58","11:26","5074",0,"Kpb-Mri-Ckr",""],["11:07","11:34","6022",0,"Kpb-Mri-Bks",""],["11:13","11:39","5078",0,"Ak-Mri-Bks",""],["11:14","12:25","5535/5536",1,"Mri-Kpb - Kpb-Pse-Bks","11:43"],["11:18","11:49","5080",0,"Ak-Mri-Bks",""],["11:28","11:55","5082",0,"Ak-Mri-Ckr",""],["11:37","12:06","5084",0,"Kpb-Mri-Ckr",""],["11:43","12:13","6024",0,"Kpb-Mri-Ckr",""],["11:50","12:55","5537/5538",1,"Tb-Mri-Kpb - Kpb-Pse-Ckr","12:20"],["11:52","12:20","5086",0,"Ak-Mri-Ckr",""],["12:07","12:34","6026",0,"Kpb-Mri-Bks",""],["12:14","12:41","5088",0,"Ak-Mri-Ckr",""],["12:19","13:22","5539/5540",1,"Ckr-Mri-Kpb - Kpb-Pse-Bks","12:46"],["12:23","12:51","5090",0,"Ak-Mri-Bks",""],["12:37","13:04","6028",0,"Kpb-Mri-Ckr",""],["12:42","13:09","5092",0,"Kpb-Mri-Bks",""],["12:44","13:50","5541/5542",1,"Ckr-Mri-Kpb - Kpb-Pse-Bks","13:13"],["12:48","13:15","5094",0,"Ak-Mri-Ckr",""],["13:12","13:39","5098",0,"Ak-Mri-Bks",""],["13:15","14:25","5543/5544",1,"Ckr-Mri-Kpb - Kpb-Pse-Bks","13:43"],["13:17","13:44","5100",0,"Ak-Mri-Ckr",""],["13:23","13:57","5102",0,"Ak-Mri-Bks",""],["13:37","14:03","6032",0,"Kpb-Mri-Bks",""],["13:46","14:14","6034",0,"Kpb-Mri-Bks",""],["13:52","14:19","5104",0,"Ak-Mri-Ckr",""],["13:54","15:00","5545/5546",1,"Bks-Mri-Kpb - Kpb-Pse-Ckr","14:23"],["14:07","14:34","6036",0,"Kpb-Mri-Ckr",""],["14:15","14:41","5106",0,"Ak-Mri-Bks",""],["14:20","15:33","5547/5548",1,"Ckr-Mri-Kpb - Kpb-Pse-Bks","14:50"],["14:20","14:50","6038",0,"Kpb-Mri-Ckr",""],["14:28","14:55","5108",0,"Ak-Mri-Bks",""],["14:38","15:05","5110",0,"Ak-Mri-Bks",""],["14:44","15:12","5112",0,"Kpb-Mri-Ckr",""],["14:49","15:55","5549/5550",1,"Ckr-Mri-Kpb - Kpb-Pse-Bks","15:17"],["14:52","15:19","6040",0,"Kpb-Mri-Bks",""],["14:58","15:26","5114",0,"Ak-Mri-Ckr",""],["15:09","16:16","5551/5552",1,"Bks-Mri-Kpb - Kpb-Pse-Ckr","15:38"],["15:11","15:38","5116",0,"Ak-Mri-Ckr",""],["15:16","15:44","6042",0,"Kpb-Mri-Bks",""],["15:28","16:01","5120",0,"Ak-Mri-Bks",""],["15:37","16:07","5122",0,"Ak-Mri-Ckr",""],["15:39","16:45","5553/5554",1,"Ckr-Mri-Kpb - Kpb-Pse-Bks","16:07"],["15:43","16:21","6044",0,"Kpb-Mri-Bks",""],["15:58","16:27","5124",0,"Ak-Mri-Ckr",""],["16:08","16:37","6048",0,"Kpb-Mri-Ckr",""],["16:10","17:18","5555/5556",1,"Bks-Mri-Kpb - Kpb-Pse-Bks","16:39"],["16:20","16:50","5126",0,"Ak-Mri-Ckr",""],["16:28","16:56","5128",0,"Ak-Mri-Bks",""],["16:43","17:11","6050",0,"Kpb-Mri-Bks",""],["16:44","17:49","5557/5558",1,"Bks-Mri-Kpb - Kpb-Pse-Bks","17:12"],["16:53","17:25","5132",0,"Ak-Mri-Ckr",""],["17:07","17:32","5134",0,"Ak-Mri-Bks",""],["17:12","17:39","6052",0,"Kpb-Mri-Bks",""],["17:16","18:25","5559/5560",1,"Mri-Kpb - Kpb-Pse-Bks","17:47"],["17:17","17:44","5136",0,"Ak-Mri-Ckr",""],["17:28","17:57","5138",0,"Kpb-Mri-Bks",""],["17:37","18:04","6054",0,"Kpb-Mri-Ckr",""],["17:42","18:09","5140",0,"Ak-Mri-Bks",""],["17:47","18:14","5142",0,"Ak-Mri-Ckr",""],["17:51","18:56","5561/5562",1,"Bks-Mri-Kpb - Kpb-Pse-Ckr","18:20"],["17:52","18:20","6056",0,"Kpb-Mri-Ckr",""],["17:58","18:30","5144",0,"Ak-Mri-Bks",""],["18:07","18:34","5146",0,"Kpb-Mri-Tb",""],["18:15","18:43","6058",0,"Kpb-Mri-Bks",""],["18:22","18:49","5148",0,"Ak-Mri-Ckr",""],["18:23","19:33","5563/5564",1,"Bks-Mri-Kpb - Kpb-Pse-Ckr","18:52"],["18:37","19:04","5150",0,"Kpb-Mri-Bks",""],["18:43","19:13","6060",0,"Kpb-Mri-Ckr",""],["18:54","20:00","5565/5566",1,"Ckr-Mri-Kpb - Kpb-Pse-Bks","19:22"],["18:58","19:24","6062",0,"Kpb-Mri-Bks",""],["19:07","19:38","5152",0,"Kpb-Mri-Bks",""],["19:16","19:43","5154",0,"Ak-Mri-Bks",""],["19:18","20:28","5567/5568",1,"Ckr-Mri-Kpb - Kpb-Pse-Ckr","19:46"],["19:22","19:51","5156",0,"Kpb-Mri-Ckr",""],["19:37","20:06","5158",0,"Ak-Mri-Ckr",""],["19:39","20:46","5569/5570",1,"Bks-Mri-Kpb - Kpb-Pse-Bks","20:07"],["19:52","20:19","5160",0,"Kpb-Mri-Bks",""],["19:54","21:00","5571/5572",1,"Mri-Kpb - Kpb-Pse-Bks","20:22"],["20:07","20:34","6066",0,"Kpb-Mri-Ckr",""],["20:09","21:14","5573/5574",1,"Bks-Mri-Kpb - Kpb-Pse-Bks","20:37"],["20:21","21:28","5575/5576",1,"Ckr-Mri-Kpb - Kpb-Pse-Ckr","20:47"],["20:22","20:53","5166",0,"Ak-Mri-Ckr",""],["20:39","21:06","5168",0,"Ak-Mri-Ckr",""],["20:44","21:49","5577/5578",1,"Ckr-Mri-Kpb - Kpb-Pse-Ckr","21:12"],["20:51","21:18","6070",0,"Kpb-Mri-Bks",""],["21:07","21:33","5170",0,"Ak-Mri-Bks",""],["21:14","21:41","5174",0,"Ak-Mri-Ckr",""],["21:21","22:24","5579/5580",1,"Bks-Mri-Kpb - Kpb-Pse-Bks","21:48"],["21:28","21:55","6074",0,"Kpb-Mri-Bks",""],["21:39","22:10","5176",0,"Ak-Mri-Ckr",""],["21:47","22:54","5581/5582",1,"Ckr-Mri-Kpb - Kpb-Pse-Bks","22:16"],["21:57","22:29","5180",0,"Ak-Mri-Bks",""],["22:12","22:40","5182",0,"Kpb-Mri-Ckr",""],["22:14","23:19","5583/5584",1,"Bks-Mri-Kpb - Kpb-Pse-Bks","22:42"],["22:20","22:47","6078",0,"Kpb-Mri-Ckr",""],["22:37","23:03","5186",0,"Ak-Mri-Ckr",""],["22:57","23:28","6080",0,"Kpb-Mri-Ckr",""],["23:12","23:42","5190",0,"Ak-Mri-Bks",""],["23:22","23:49","6082",0,"Kpb-Mri-Ckr",""],["23:41","00:07","5192",0,"Ak-Mri-Ckr",""],["23:52","00:18","5194",0,"Kpb-Mri-Ckr",""],["00:06","00:35","5198",0,"Ak-Mri-Ckr",""]]};
+const NAMES={Ak:"Angke",Kpb:"Kampung Bandan",Bks:"Bekasi",Ckr:"Cikarang",Tb:"Tambun",Mri:"Manggarai",Thb:"Tanah Abang",Du:"Duri",Jakk:"Jakarta Kota"};
+const toMin=t=>{const[h,m]=t.split(":").map(Number);return (h<3?h+24:h)*60+m};
+const trips={};
+for(const k in DATA) trips[k]=DATA[k].map(([dep,arr,no,kpb,rel,kpbT])=>({dep,arr,no,loop:!!kpb,rel,kpbT,d:toMin(dep),a:toMin(arr)}));
+
+let dir=null, filter="all", full=false;
+try{filter=localStorage.getItem("krl-filter")||"all"}catch(e){}
+
+function jakartaNow(){
+  const p=new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Jakarta",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"}).formatToParts(new Date());
+  const g=t=>+p.find(x=>x.type===t).value;
+  const h=g("hour"),m=g("minute"),s=g("second");
+  return {h,m,s,min:(h<3?h+24:h)*60+m+s/60};
+}
+function towards(t){
+  const first=t.rel.split(" - ")[0].split("-");
+  return NAMES[first[first.length-1]]||first[first.length-1];
+}
+function finalDest(t){const p=t.rel.split("-");const x=p[p.length-1].trim();return NAMES[x]||x}
+function describe(t){
+  if(dir==="CUK_SUD"){
+    return t.loop ? `Via Pasar Senen, Kampung Bandan ${t.kpbT}. Stay on board.`
+                  : `Via Manggarai · train to ${towards(t)}`;
+  }
+  return t.loop ? `Board toward Karet. Kampung Bandan ${t.kpbT}, then Pasar Senen. Stay on board.`
+                : `Board toward Manggarai · train to ${finalDest(t)}`;
+}
+const fmtIn=m=>m<1?"now":m<60?`${Math.floor(m)} min`:`${Math.floor(m/60)}h ${String(Math.floor(m%60)).padStart(2,"0")}m`;
+
+function render(){
+  const now=jakartaNow();
+  document.getElementById("clock").textContent=`${String(now.h).padStart(2,"0")}:${String(now.m).padStart(2,"0")} WIB`;
+  if(!dir) dir = now.min>=3*60 && now.min<12*60 ? "CUK_SUD" : "SUD_CUK";
+  for(const k of ["CUK_SUD","SUD_CUK"]) document.getElementById("d-"+k).setAttribute("aria-pressed",k===dir);
+  for(const k of ["all","direct","kpb"]) document.getElementById("f-"+k).setAttribute("aria-pressed",k===filter);
+
+  const all=trips[dir].filter(t=>filter==="all"||(filter==="kpb")===t.loop);
+  const up=all.filter(t=>t.d>=now.min-0.5);
+  const from=dir==="CUK_SUD"?"Cakung":"Sudirman", to=dir==="CUK_SUD"?"Sudirman":"Cakung";
+
+  const next=document.getElementById("next");
+  if(!up.length){
+    const first=all[0];
+    next.className="next";
+    next.innerHTML=`<div class="eyebrow">No more trains tonight</div>
+      <div class="meta">First train from ${from} tomorrow: <b class="t">${first?first.dep:"—"}</b></div>`;
+  } else {
+    const n=up[0];
+    // earliest arrival among trains leaving in the next 45 min
+    const win=up.filter(t=>t.d<=n.d+45);
+    const best=win.reduce((a,b)=>b.a<a.a?b:a,win[0]);
+    next.className="next"+(n.loop?" loop":"");
+    let tip="";
+    if(best!==n && n.a-best.a>=3){
+      tip=`<div class="tip">Faster: wait for the <b class="t">${best.dep}</b> (${best.loop?"via Kampung Bandan":"direct"}). It reaches ${to} at <b class="t">${best.arr}</b>, ${n.a-best.a} min earlier.</div>`;
+    }
+    next.innerHTML=`<div class="eyebrow">Next train from ${from}</div>
+      <div class="bigrow"><div class="big">${n.dep}</div>
+        <div class="count">${fmtIn(n.d-now.min)}<small>${n.d-now.min<1?"departing":"until departure"}</small></div></div>
+      <div class="meta"><span class="badge${n.loop?" loop":""}">${n.loop?"Via Kampung Bandan":"Direct"}</span>
+        <span>Arrives ${to} <b class="t">${n.arr}</b></span><span><b class="t">${n.a-n.d}</b> min</span><span>KA ${n.no}</span></div>
+      <div class="meta">${describe(n)}</div>${tip}`;
+  }
+
+  const shown=full?all:up.slice(0,8);
+  document.getElementById("listTitle").textContent=full?`All trains, ${from} → ${to}`:"Upcoming";
+  const rows=document.getElementById("rows");
+  rows.innerHTML=shown.length?shown.map(t=>{
+    const mins=t.d-now.min, past=mins<-0.5;
+    return `<div class="row${t.loop?" loop":""}${past?" past":""}${!past&&mins<=15?" soon":""}">
+      <div class="bar"></div><div class="dep">${t.dep}</div>
+      <div class="info"><div class="l1">Arr <span class="t">${t.arr}</span> · ${t.a-t.d} min</div>
+        <div class="l2">${t.loop?"Via Kampung Bandan":"Direct"} · KA ${t.no}</div></div>
+      <div class="in">${past?"left":fmtIn(mins)}</div></div>`;
+  }).join(""):`<div class="empty">No more trains on this route today.</div>`;
+  document.getElementById("more").textContent=full?"Show upcoming only":"Show full day";
+  if(full){const r=rows.querySelector(".row:not(.past)"); if(r&&!render.scrolled){render.scrolled=true; r.scrollIntoView({block:"center"});}}
+}
+document.getElementById("d-CUK_SUD").onclick=()=>{dir="CUK_SUD";render()};
+document.getElementById("d-SUD_CUK").onclick=()=>{dir="SUD_CUK";render()};
+for(const k of ["all","direct","kpb"]) document.getElementById("f-"+k).onclick=()=>{filter=k;try{localStorage.setItem("krl-filter",k)}catch(e){};render()};
+document.getElementById("more").onclick=()=>{full=!full;render.scrolled=false;render()};
+render(); setInterval(render,15000);
+</script>
+</body>
+</html>
